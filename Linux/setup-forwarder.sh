@@ -22,7 +22,8 @@ fi
 
 setup_splunk() {
 # 6. Prompt the user for the Splunk server IP
-  read -p "Enter the IP address of the Splunk server: " splunk_server_ip
+  #splunk_server_ip="172.20.242.20"
+  read -p "Enter the IP address of the Splunk server (Should be: 172.20.242.20): " splunk_server_ip
 
   # 7. Configure the Forwarder to Send Logs
   echo "Configuring Splunk Forwarder inputs..."
@@ -51,9 +52,9 @@ setup_splunk() {
 
   [monitor:///var/log/nginx/error.log]
   index = web
-  sourcetype = nginx_error
+  sourcetype = nginx_errorNETLAB+™
 
-  [monitor:///var/log/iptables.log]
+  [monitor:///var/log/iptables.log]NETLAB+™
   index = firewall
   sourcetype = iptables
 
@@ -86,7 +87,7 @@ EOF
   defaultGroup = default-autolb-group
 
   [tcpout:default-autolb-group]
-  server = $splunk_server_ip:9997
+  server = $splunk_server_ip:2510
 EOF
 
   # 10. Restart the Splunk Universal Forwarder to apply changes
@@ -163,6 +164,20 @@ apt_based() {
   install_splunk
 }
 
+dnf_based() {
+  echo "Checking if wget, tar, or unzip is not installed." >> setup-forwarder.log 
+
+  # Ensure required tools are installed (wget, tar, unzip)
+  if ! command -v wget &> /dev/null || ! command -v tar &> /dev/null || ! command -v unzip &> /dev/null; then
+    echo "wget, tar, or unzip is not installed. Installing..."
+    echo "wget, tar, or unzip is not installed. Installing..." >> setup-forwarder.log 
+    sudo dnf upgrade --refresh && dnf install wget tar unzip -y || { echo "Failed to install required tools"; exit 1; }
+  fi
+  echo "tools found or installed"
+  install_splunk
+}
+
+
 while true; do
   printf "1.| apt\n2.| dnf\n3.| other \n"
   printf "\nWhat package manager are you using?: "
@@ -172,7 +187,8 @@ while true; do
       apt_based
       break 
     elif [ "$package_manager_selection" = "2" ]; then
-      swap_size=32
+      echo "on dnf_based" >> setup-forwarder.log 
+      dnf_based
       break
     elif [ "$package_manager_selection" = "3" ]; then
       swap_size=8
