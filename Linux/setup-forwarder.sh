@@ -4,21 +4,12 @@ set -euo pipefail
 
 # Needed to grab our logs
 src_dir=$(dirname "$(realpath "$0")")
+source "${src_dir}/commonFuctions.sh"
 host=$(hostname)
 
 
 echo "Starting Splunk Universal Forwarder setup..."
-echo "Starting Splunk Universal Forwarder setup..." >> setup-forwarder.log
-
-echo "Checking if i'm running as root."
-echo "Checking if i'm running as root." >> setup-forwarder.log
-
-USER=$(whoami)
-if [[ "$USER" != "root" ]]; then
-  echo "Run me as root. Exiting!"
-  echo "Run me as root. Exiting!" >> setup-forwarder.log
-  exit 1
-fi
+logger "Starting Splunk Universal Forwarder setup..."
 
 setup_splunk() {
 # 6. Prompt the user for the Splunk server IP
@@ -152,28 +143,30 @@ install_splunk() {
 }
 
 apt_based() {
-  echo "Checking if wget, tar, or unzip is not installed." >> setup-forwarder.log 
-
+  echo "Checking if wget, tar, or unzip is not installed."  
+  logger "Checking if wget, tar, or unzip is not installed."
   # Ensure required tools are installed (wget, tar, unzip)
   if ! command -v wget &> /dev/null || ! command -v tar &> /dev/null || ! command -v unzip &> /dev/null; then
     echo "wget, tar, or unzip is not installed. Installing..."
-    echo "wget, tar, or unzip is not installed. Installing..." >> setup-forwarder.log 
-    sudo apt-get update && apt-get install wget tar unzip -y || { echo "Failed to install required tools"; exit 1; }
+    logger "wget, tar, or unzip is not installed. Installing..." 
+    sudo apt-get update && apt-get install wget tar unzip -y || { echo "Failed to install required tools"; logger "Failed to install required tools"; exit 1; }
   fi
   echo "tools found or installed"
+  logger "tools found or installed"
   install_splunk
 }
 
 dnf_based() {
-  echo "Checking if wget, tar, or unzip is not installed." >> setup-forwarder.log 
-
+  echo "Checking if wget, tar, or unzip is not installed." 
+  logger "Checking if wget, tar, or unzip is not installed."
   # Ensure required tools are installed (wget, tar, unzip)
   if ! command -v wget &> /dev/null || ! command -v tar &> /dev/null || ! command -v unzip &> /dev/null; then
     echo "wget, tar, or unzip is not installed. Installing..."
-    echo "wget, tar, or unzip is not installed. Installing..." >> setup-forwarder.log 
-    sudo dnf upgrade --refresh && dnf install wget tar unzip -y || { echo "Failed to install required tools"; exit 1; }
+    logger "wget, tar, or unzip is not installed. Installing..." 
+    sudo dnf upgrade --refresh && dnf install wget tar unzip -y || { echo "Failed to install required tools"; logger "Failed to install required tools"; exit 1; }
   fi
   echo "tools found or installed"
+  logger "tools found or installed"
   install_splunk
 }
 
@@ -183,11 +176,11 @@ while true; do
   printf "\nWhat package manager are you using?: "
   read -r package_manager_selection
   if [ "$package_manager_selection" = "1" ]; then
-      echo "on apt_based" >> setup-forwarder.log 
+      logger "on apt_based" 
       apt_based
       break 
     elif [ "$package_manager_selection" = "2" ]; then
-      echo "on dnf_based" >> setup-forwarder.log 
+      logger "on dnf_based" 
       dnf_based
       break
     elif [ "$package_manager_selection" = "3" ]; then
