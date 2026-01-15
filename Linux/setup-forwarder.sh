@@ -2,6 +2,14 @@
 
 set -euo pipefail
 
+# Logging function
+LOGNAME="hardener_script.log" # Should be changed by script using this function
+
+logger() {
+  text=$1
+  echo "$1" >> ${LOGNAME}
+}
+
 # Needed to grab our logs
 src_dir=$(dirname "$(realpath "$0")")
 source "${src_dir}/commonFuctions.sh"
