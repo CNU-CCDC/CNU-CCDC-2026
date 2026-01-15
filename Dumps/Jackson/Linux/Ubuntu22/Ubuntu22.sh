@@ -8,15 +8,6 @@
 # This is the main function.  It acts as a menu.
 function main {
     printf "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
-    printf "   ______    ______    ______    __       __    ______               __      __    ________    __            ________   \n"
-    printf "  /      \  /      |  /      \  /  \     /  |  /      \             /  |    /  |  /        \  /  |          /        \  \n"
-    printf " /&&&&&&  | &&&&&&/  /&&&&&&  | &&  \   /&& | /&&&&&&  |            && |    && | /&&&&&&&&  | && |         /&&&&&&&&  | \n"
-    printf " && \__&&/    && |   && | _&&/  &&$  \ /&&$ | && |__&& |   ______   && |    && | && |    && | && |         && |    && | \n"
-    printf " &&      \    && |   && |/    | &&&&  /&&&& | &&    && |  |______|  && |    && | && |    && | && |         && |    && | \n"
-    printf "  &&&&&&  |   && |   && |&&&& | && && &&/&& | &&&&&&&& |            &&&&&&&&&& | && |    && | && |         && |    && | \n"
-    printf " /  \__&& |  _&& |_  && \__&& | && |&&$/ && | && |  && |            && |    && | && |    && | && |_______  && |    && | \n"
-    printf " &&    && / / &&   | &&    && / && | $/  && | && |  && |            && |    && | && \    && | &&         | && \    && | \n"
-    printf "  &&&&&&_/  &&&&&&_/  &&&&&&_/  &&_/     &&_/ &&_/  &&_/            &&_/    &&_/  &&&&&&&&_/  &&&&&&&&&&_/  &&&&&&&&_/  \n"
     printf "             __     __   _______    __     __   ___      __   ________   __     __        ______     ______             \n"
     printf "            /  |   /  | /       \  /  |   /  | /   \    /  | /        | /  |   /  |      /      \   /      \            \n"
     printf "            && |   && | &&&&&&&  \ && |   && | &&&& \   && | &&&&&&&&_/ && |   && |     /&&&&&&  | /&&&&&&  |           \n"
@@ -123,42 +114,91 @@ function main {
 }
 
 function reinstall_apt {
-    # Getting apt version, OS name, and the codename of the OS
-    APT_VERS=$(apt -v | awk '{print $2}')
+    # Ask user for specific APT version or reinstall the current apt version
+    # Check http://us.archive.ubuntu.com/ubuntu/pool/main/a/apt/ for ubuntu/mint
+    # Check https://ftp.debian.org/debian/pool/main/a/apt/ for debian
+    echo "Please enter the APT version you'd like to install to the system.  The version needs to be available in the operating system's repositories.  To auto-detect the version based on the installed version, enter nothing."
+    echo "This DOES NOT WORK for every APT version."
+    read -r APT_VERS
+
+    # Checking if the APT_VERS variable is empty
+    if [ "$APT_VERS" = "" ]; then
+        # Detecting the installed apt version
+        APT_VERS=$(apt -v | awk '{print $2}')
+    fi
+
+    echo "Installing APT version ${APT_VERS}"
+    
+    # Getting the OS and codename from /etc/os-release
     OS=$(awk -F= '{if ($1 == "ID") print $2}' < /etc/os-release)
     CODENAME=$(awk -F= '{if ($1 == "VERSION_CODENAME") print $2}' < /etc/os-release)
 
-    # Installing apt
-    wget "http://us.archive.ubuntu.com/ubuntu/pool/main/a/apt/libapt-pkg6.0_${APT_VERS}_amd64.deb" -O libapt.deb
-    wget "http://us.archive.ubuntu.com/ubuntu/pool/main/a/apt/apt_${APT_VERS}_amd64.deb" -O apt.deb
-    wget "http://us.archive.ubuntu.com/ubuntu/pool/main/a/apt/apt-utils_${APT_VERS}_amd64.deb" -O apt-utils.deb
-    dpkg -Ri .
-
-    # Editing /etc/apt/sources.list
     if [ "$OS" = "debian" ]; then
-        echo "deb http://deb.debian.org/debian          ${CODENAME}           contrib main non-free non-free-firmware"         | sudo tee    /etc/apt/sources.list
-        echo "deb http://deb.debian.org/debian          ${CODENAME}-backports contrib main non-free non-free-firmware"         | sudo tee -a /etc/apt/sources.list
-        echo "deb http://deb.debian.org/debian          ${CODENAME}-updates   contrib main non-free non-free-firmware"         | sudo tee -a /etc/apt/sources.list
-        echo "deb http://deb.debian.org/debian-security ${CODENAME}-security  contrib main non-free non-free-firmware updates" | sudo tee -a /etc/apt/sources.list
+        # Installing apt
+        reinstall_apt_install_apt "http://deb.debian.org/debian/pool/main/a/apt" $APT_VERS
+
+        # Configure Debian repositories
+        echo "deb http://deb.debian.org/debian ${CODENAME} contrib main non-free non-free-firmware" # | sudo tee /etc/apt/sources.list
+        echo "deb http://ftp.debian.org/debian ${CODENAME}-backports contrib main non-free non-free-firmware" # | sudo tee -a /etc/apt/sources.list
+        echo "deb http://deb.debian.org/debian ${CODENAME}-updates contrib main non-free non-free-firmware" # | sudo tee -a /etc/apt/sources.list
+        echo "deb http://security.debian.org/debian-security ${CODENAME}-security contrib main non-free non-free-firmware updates" # | sudo tee -a /etc/apt/sources.list
     elif [ "$OS" = "ubuntu" ]; then
-        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME}           main multiverse restricted universe" | sudo tee    /etc/apt/sources.list
-        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME}-backports main multiverse restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME}-security  main multiverse restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME}-updates   main multiverse restricted universe" | sudo tee -a /etc/apt/sources.list
+        # Installing apt
+        reinstall_apt_install_apt "http://us.archive.ubuntu.com/ubuntu/pool/main/a/apt" $APT_VERS
+
+        # Configure Ubuntu repositories
+        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME} main multiverse restricted universe" # | sudo tee /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME}-backports main multiverse restricted universe" # | sudo tee -a /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME}-security main multiverse restricted universe" # | sudo tee -a /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu ${CODENAME}-updates main multiverse restricted universe" # | sudo tee -a /etc/apt/sources.list
     elif [ "$OS" = "linuxmint" ]; then
+        # Installing apt
+        reinstall_apt_install_apt "http://us.archive.ubuntu.com/ubuntu/pool/main/a/apt" $APT_VERS
+
         # Get the Ubuntu base version
         UBUNTU_BASE=$(grep UBUNTU_CODENAME /etc/os-release | cut -d= -f2)
 
         # Configure Linux Mint repositories
-        echo "deb http://packages.linuxmint.com ${CODENAME} main upstream import backport #id:linuxmint_main" | sudo tee /etc/apt/sources.list.d/official-package-repositories.list
-        echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_BASE} main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
-        echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_BASE}-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
-        echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_BASE}-backports main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
-        echo "deb http://security.ubuntu.com/ubuntu ${UBUNTU_BASE}-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
+        echo "deb http://packages.linuxmint.com ${CODENAME} main upstream import backport #id:linuxmint_main" # | sudo tee /etc/apt/sources.list.d/official-package-repositories.list
+        echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_BASE} main restricted universe multiverse" # | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
+        echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_BASE}-updates main restricted universe multiverse" # | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
+        echo "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_BASE}-backports main restricted universe multiverse" # | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
+        echo "deb http://security.ubuntu.com/ubuntu ${UBUNTU_BASE}-security main restricted universe multiverse" # | sudo tee -a /etc/apt/sources.list.d/official-package-repositories.list
+    else
+        echo "Unrecognized OS.  This function is only built for debian, ubuntu, and linux mint"
     fi
     
     read -rp "Press [Enter] to return to the menu."
     main
+}
+
+# Helper function for reinstall_apt that installs APT based on two parameters
+function reinstall_apt_install_apt {
+    # Validating parameters
+    if [ "${1}" = "" ]; then
+        echo "ERROR: url parameter was not provided.  Please specify the url for the apt package for your distro"
+        return
+    elif [ "${2}" = "" ]; then
+        echo "ERROR: apt version parameter was not provided.  Please specify the version of apt to install"
+        return
+    fi
+    
+    # Downloading apt debs
+    mkdir aptinstall
+
+    APT_FILES=$(curl https://deb.debian.org/debian/pool/main/a/apt/ | grep "${2}_amd64.deb" | awk -F\> '{ print $7 }' | sed '/libapt-pkg-dev/d' | sed -r 's/<\/a//')
+    for f in $APT_FILES; do
+        echo "Downloading \"${1}/${f}\" to aptinstall/${f}"
+        wget "${1}/${f}" -O aptinstall/
+    done
+
+    # Installing apt
+    echo "Installing apt"
+    dpkg -Ri ./aptinstall
+
+    # Cleaning up files
+    echo "Deleting installation files"
+    rm -rf ./aptinstall
 }
 
 # This function updates apps from the snap store and apps from apt.
@@ -168,7 +208,6 @@ function update_apps {
     sudo apt upgrade -y
     sudo apt --fix-broken install -y
     sudo apt autoremove -y
-    
     
     read -rp "Press [Enter] to return to the menu."
     main
@@ -180,7 +219,7 @@ function manage_apps {
 
     # Uninstalling prohibited apps
     # Hacking tools
-    sudo apt purge -y \
+    sudo apt remove -y \
     aircrack-ng apktool  autopsy \
     deluge      dirb     dsniff  \
     ettercap    ftp     \
@@ -195,20 +234,18 @@ function manage_apps {
     zmap
 
     # Games
-    sudo apt purge -y \
+    sudo apt remove -y \
     aisleriot   endless-sky   freeciv         \
     goldeneye   gameconqueror gnome-mahjongg  \
     gnome-mines gnome-sudoku  wesnoth
 
     # Insecure software
-    sudo apt purge -y \
+    sudo apt remove -y \
     manaplus   nis        rpcbind \
     rsh-client rsh-server rsync   \
     talk       telnet     telnetd
 
     # Other
-    # These apps will keep their config files installed.
-    # If you get a penalty from this line, please reinstall the app, and keep the current configs.
     sudo apt remove -y \
     amule           apport         autofs \
     avahi-daemon    avahi-utils    bind9 \
