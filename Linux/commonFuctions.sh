@@ -4,30 +4,26 @@ set -euo pipefail
 
 # Used for coloring text in the script
 
-red_start="\033[31m"
-green_start="\033[32m"
-yellow_start="\033[1;33m"
-blue_start="\033[34m"
-color_end="\033[0m"
+red="\033[31m"
+green="\033[32m"
+yellow="\033[1;33m"
+blue="\033[34m"
+reset="\033[0m"
 
 green_text() {
-  text=$1
-  echo -e "${green_start}$text${color_end}"
+  echo -e "${green}${1}${reset}"`
 }
 
 blue_text() {
-  text=$1
-  echo -e "${blue_start}$text${color_end}"
+  echo -e "${blue}${1}${reset}"
 }
 
 red_text() {
-  text=$1
-  echo -e "${red_start}$text${color_end}"
+  echo -e "${red}${1}${reset}"
 }
 
 yellow_text() {
-  text=$1
-  echo -e "${yellow_start}$text${color_end}"
+  echo -e "${yellow}${1}${reset}"
 }
 
 # Logging function
